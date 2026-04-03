@@ -23,5 +23,21 @@
   },
   "devDependencies": {
     "nodemon": "^3.0.2"
+  "name": "backend",
+  "version": "1.0.0",
+  "description": "Backend API — US-3: Autenticacao e Estrutura Multi-tenant",
+  "main": "src/app.js",
+  "scripts": {
+    "start": "node src/app.js",
+    "dev": "nodemon src/app.js"
+  },
+  "dependencies": {
+    "bcrypt": "^5.1.1",
+    "express": "^4.18.2",
+    "jsonwebtoken": "^9.0.2",
+    "uuid": "^9.0.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.3"
   }
 }
