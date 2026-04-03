@@ -1,0 +1,51 @@
+US-7 — Backend: Integração de assinatura digital
+==================================================
+
+CONTEXTO
+--------
+O sistema necessita integrar assinatura digital com validade jurídica através de uma plataforma terceirizada (D4Sign ou Clicksign) para possibilitar a assinatura eletrônica de contratos com certificação ICP-Brasil.
+
+HISTORIA
+--------
+Como desenvolvedor backend,
+quero integrar um serviço de assinatura digital,
+para que os contratos possam ser assinados digitalmente com validade jurídica.
+
+CRITERIOS DE ACEITACAO
+-----------------------
+1. API da D4Sign ou Clicksign integrada com autenticação funcional
+2. Fluxo de envio de contrato para assinatura implementado e testado
+3. Webhooks configurados para receber atualizações de status (assinado, recusado, expirado)
+4. Status do contrato atualizado automaticamente via webhook no banco de dados
+5. Documento assinado armazenado no S3 com certificado ICP-Brasil validado
+6. Notificações por e-mail enviadas aos signatários após envio para assinatura
+7. Tratamento de erros e validações implementados
+
+REGRAS TECNICAS
+---------------
+- Seguir convencoes do CLAUDE.md
+- Utilizar variáveis de ambiente para credenciais da plataforma de assinatura
+- Implementar retry logic para chamadas de API com backoff exponencial
+- Validar respostas de webhook antes de atualizar status no banco
+- Armazenar certificado do documento assinado junto ao arquivo no S3
+- Sem over-engineering; preferir soluções simples e diretas
+
+CRITERIOS DE TESTE (QA)
+------------------------
+API:
+  - Verificar que contrato é enviado com sucesso para assinatura
+  - Validar recebimento de webhook e atualização correta de status
+  - Testar handling de erros (falha na API, timeout, webhook inválido)
+  - Confirmar que e-mail é enviado aos signatários
+
+E2E:
+  - Fluxo completo: envio → assinatura → webhook → armazenamento → notificação
+  - Validar que documento final contém certificado ICP-Brasil
+  - Testar cancelamento e expiração de assinatura pendente
+
+FORA DO ESCOPO
+--------------
+- Interface frontend para assinatura
+- Fluxo de assinatura manual ou presencial
+- Integração com outras plataformas de assinatura (além D4Sign/Clicksign)
+- Sistema de auditoria de assinaturas
