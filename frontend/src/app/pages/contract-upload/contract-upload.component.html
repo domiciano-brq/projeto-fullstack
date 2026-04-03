@@ -1,0 +1,105 @@
+<div class="upload-page">
+  <header class="page-header">
+    <h1 class="page-title">Analise de Contratos com IA</h1>
+    <p class="page-subtitle">
+      Envie seu contrato para identificar clausulas de risco e obter um resumo executivo automatico.
+    </p>
+  </header>
+
+  <section class="upload-card">
+    <div
+      class="dropzone"
+      [class.dragover]="isDragOver()"
+      [class.has-file]="selectedFile() !== null"
+      (dragover)="onDragOver($event)"
+      (dragleave)="onDragLeave($event)"
+      (drop)="onDrop($event)"
+    >
+      @if (selectedFile() === null) {
+        <div class="dropzone-prompt">
+          <span class="dropzone-icon" aria-hidden="true">&#128196;</span>
+          <p class="dropzone-text">
+            Arraste e solte seu contrato aqui ou
+            <label class="file-label" for="file-input">clique para selecionar</label>
+          </p>
+          <p class="dropzone-hint">PDF, DOCX ou TXT — maximo 50 MB</p>
+          <input
+            id="file-input"
+            type="file"
+            accept=".pdf,.docx,.txt"
+            class="file-input"
+            (change)="onFileSelected($event)"
+            aria-label="Selecionar arquivo de contrato"
+          />
+        </div>
+      } @else {
+        <div class="file-preview">
+          <span class="file-badge">{{ fileExtension }}</span>
+          <div class="file-info">
+            <span class="file-name">{{ selectedFile()!.name }}</span>
+            <span class="file-size">{{ fileSizeMb }} MB</span>
+          </div>
+          <button
+            type="button"
+            class="remove-btn"
+            (click)="removeFile()"
+            aria-label="Remover arquivo selecionado"
+          >
+            &#10005;
+          </button>
+        </div>
+      }
+    </div>
+
+    @if (errorMessage()) {
+      <div class="error-banner" role="alert">
+        <span class="error-icon" aria-hidden="true">&#9888;</span>
+        {{ errorMessage() }}
+      </div>
+    }
+
+    <div class="actions">
+      <button
+        type="button"
+        class="btn btn-primary"
+        [disabled]="selectedFile() === null || uploadState() === 'uploading'"
+        (click)="uploadContract()"
+      >
+        @if (uploadState() === 'uploading') {
+          <span class="spinner" aria-hidden="true"></span>
+          Enviando...
+        } @else {
+          Analisar Contrato
+        }
+      </button>
+
+      <a routerLink="/search" class="btn btn-secondary">
+        Buscar Contratos
+      </a>
+    </div>
+
+    @if (uploadState() === 'uploading') {
+      <p class="upload-notice">
+        Seu contrato esta sendo processado de forma assincrona. Voce sera redirecionado ao resultado em instantes.
+      </p>
+    }
+  </section>
+
+  <section class="info-cards">
+    <div class="info-card">
+      <span class="info-icon" aria-hidden="true">&#128269;</span>
+      <h3>Identificacao de Riscos</h3>
+      <p>Clausulas abusivas classificadas como alto, medio ou baixo risco com explicacao clara.</p>
+    </div>
+    <div class="info-card">
+      <span class="info-icon" aria-hidden="true">&#128203;</span>
+      <h3>Resumo Executivo</h3>
+      <p>Resumo em linguagem simples para voce entender o contrato antes de assinar.</p>
+    </div>
+    <div class="info-card">
+      <span class="info-icon" aria-hidden="true">&#128279;</span>
+      <h3>Busca Semantica</h3>
+      <p>Encontre contratos similares por conteudo usando inteligencia artificial.</p>
+    </div>
+  </section>
+</div>
