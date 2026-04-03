@@ -1,7 +1,8 @@
 'use strict';
+
 /**
- * Express application — US-3
- * Entry point: node src/app.js
+ * Express application setup.
+ * Entry point: node src/index.js
  */
 
 const express = require('express');
@@ -13,48 +14,37 @@ const PORT = process.env.PORT || 3000;
 // Parse JSON bodies (for non-multipart endpoints)
 app.use(express.json());
 
+// Parse URL-encoded bodies
+app.use(express.urlencoded({ extended: true }));
+
 // Health check
-app.get('/health', (_req, res) => res.json({ status: 'ok' }));
+app.get('/health', (_req, res) => {
+  res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
+});
 
 // All API routes under /api prefix
 app.use('/api', routes);
 
 // 404 fallback
 app.use((_req, res) => {
-  res.status(404).json({ error: 'Rota nao encontrada.' });
+  res.status(404).json({ error: 'Rota nao encontrada' });
 });
 
 // Global error handler
 app.use((err, _req, res, _next) => {
-  console.error(err);
-  res.status(500).json({ error: 'Erro interno do servidor.' });
+  if (err.code === 'LIMIT_FILE_SIZE') {
+    return res.status(413).json({ error: 'Arquivo excede o limite de 10MB' });
+  }
+  console.error(err.stack || err.message);
+  return res.status(500).json({ error: 'Erro interno do servidor' });
 });
-
-app.listen(PORT, () => {
-  console.log(`Backend US-6 rodando na porta ${PORT}`);
-});
-
-app.use(express.json());
-
-// All routes under /api
-app.use('/api', routes);
-
-// 404 handler
-app.use((req, res) => {
-  res.status(404).json({ error: 'Rota nao encontrada' });
-});
-
-// Error handler
-app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).json({ error: 'Erro interno do servidor' });
-});
-
-const PORT = process.env.PORT || 3000;
 
 if (require.main === module) {
   app.listen(PORT, () => {
-    console.log(`Backend running on port ${PORT}`);
+    console.log(`[App] Servidor iniciado na porta ${PORT}`);
+    if (!process.env.OPENAI_API_KEY) {
+      console.warn('[App] OPENAI_API_KEY nao configurada — modo simulado ativo');
+    }
   });
 }
 

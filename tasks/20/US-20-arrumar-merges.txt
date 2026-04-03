@@ -1,0 +1,44 @@
+US-20 — Arrumar merges
+======================
+
+CONTEXTO
+--------
+Nos ultimos 3 pull requests, houve conflitos de merge que resultaram em aceitacao de ambas as mudancas. Este processo pode ter deixado duplicacoes, inconsistencias ou funcionalidades quebradas no codigo. É necessario verificar os commits recentes e resolver qualquer problema introduzido durante os merges.
+
+HISTORIA
+--------
+Como desenvolvedor,
+quero que os conflicts de merge sejam resolvidos corretamente,
+para que o codigo seja consistente e funcional.
+
+CRITERIOS DE ACEITACAO
+-----------------------
+1. Todos os ultimos 3 PRs sao analisados para identificar conflitos de merge
+2. Duplicacoes de codigo sao removidas
+3. Inconsistencias logicas introducidas pelos merges sao corrigidas
+4. Todas as funcionalidades permancem operacionais apos as correcoes
+5. O repositorio esta em estado consistente e sem conflicts pendentes
+
+REGRAS TECNICAS
+---------------
+- Seguir convencoes do CLAUDE.md
+- Sem over-engineering
+- Validar que nao ha duplicacao de logica ou imports
+- Verificar integridade de funcoes e modulos afetados
+- Documentar mudancas aplicadas
+
+CRITERIOS DE TESTE (QA)
+------------------------
+API:
+  - Testar endpoints afetados pelos ultimos 3 PRs
+  - Validar responses esperadas
+
+E2E:
+  - Executar fluxos principais do sistema
+  - Verificar funcionalidades que sofreram merge conflicts
+
+FORA DO ESCOPO
+--------------
+- Refatorar codigo nao relacionado aos merges
+- Adicionar novas features durante a resolucao de conflicts
+- Alterar logica de negocio alem do necessario para corrigir conflicts
