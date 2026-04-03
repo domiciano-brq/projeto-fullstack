@@ -1,4 +1,20 @@
 {
+  "name": "backend",
+  "version": "1.0.0",
+  "description": "Backend API for digital signature integration",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   "name": "contract-management-backend",
   "version": "1.0.0",
   "description": "Backend para gerenciamento de contratos com upload, OCR e versionamento",
