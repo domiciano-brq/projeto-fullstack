@@ -1,2 +1,5 @@
 .fusion-plugin/
 logs/
+node_modules/
+.env
+*.log
