@@ -1,0 +1,72 @@
+US-5 — Backend: Pipeline de análise de contratos com IA
+========================================================
+
+CONTEXTO
+--------
+Contratos jurídicos contêm cláusulas que podem ser prejudiciais ao usuário e difíceis de compreender.
+A análise automatizada com IA permite identificar riscos rapidamente e gerar resumos executivos de fácil compreensão.
+
+HISTORIA
+--------
+Como usuário da plataforma,
+quero que meu contrato seja analisado automaticamente por IA para identificar cláusulas abusivas e obter um resumo,
+para compreender melhor os riscos antes de assinar.
+
+CRITERIOS DE ACEITACAO
+-----------------------
+1. API de análise de contratos processa documento completo em menos de 10 segundos
+2. Retorna lista de cláusulas com classificação de risco (alto/médio/baixo) e explicação
+3. Gera resumo executivo do contrato em linguagem clara
+4. Busca semântica encontra contratos similares por conteúdo no banco de dados
+5. Sistema não reprocessa contratos já analisados (cache de resultados)
+6. Processamento de análise é assíncrono via fila para não bloquear requisições
+7. Documentação da API inclui exemplos de request/response
+
+REGRAS TECNICAS
+---------------
+- Integrar OpenAI GPT-4o via LangChain para análise e geração de resumos
+- Usar pgvector (PostgreSQL) para embeddings e busca semântica entre contratos
+- Implementar fila de processamento com BullMQ (Redis)
+- Cache de resultados em Redis para evitar reprocessamento de contratos duplicados
+- Validar input do arquivo do contrato nas bordas (tipo MIME, tamanho máximo)
+- Sem over-engineering — manter solução simples e direta
+- Seguir estrutura de pastas existente (docs/ centralizado)
+
+CRITERIOS DE TESTE (QA)
+------------------------
+API - Fluxo Happy Path:
+  - Enviar contrato válido retorna ID de análise imediatamente (requisição assíncrona)
+  - Consultar status da análise retorna progressão até conclusão
+  - Resultado contém lista de cláusulas com risco, resumo e embeddings salvos
+
+API - Análise de Risco:
+  - Contrato com cláusula conhecida de alta risco é identificado corretamente
+  - Nível de risco (alto/médio/baixo) é classificado consistentemente
+  - Explicação de risco é clara e acionável
+
+API - Cache e Reprocessamento:
+  - Mesmo contrato enviado duas vezes retorna resultado cacheado na segunda vez
+  - Cache é invalidado se contrato é atualizado
+
+API - Busca Semântica:
+  - Buscar por "cláusula de confidencialidade" retorna contratos relevantes
+  - Resultados são ordenados por similaridade decrescente
+  - Busca retorna em menos de 2 segundos mesmo com 10k+ contratos
+
+E2E - Pipeline Completo:
+  - Usuário faz upload de contrato (docx, pdf ou txt)
+  - Sistema exibe notificação de processamento em andamento
+  - Após análise, exibe resumo, lista de riscos e permite buscar similares
+  - Análise leva menos de 10 segundos fim-a-fim
+
+E2E - Tratamento de Erros:
+  - Upload de arquivo inválido (ex: imagem) retorna erro claro
+  - Arquivo muito grande (>50MB) é rejeitado com mensagem útil
+  - API indisponível exibe retry automático ou notificação ao usuário
+
+FORA DO ESCOPO
+--------------
+- Integração com outros provedores de IA (apenas OpenAI nesta sprint)
+- Interface de administração para ajustar prompts da IA (será iteração futura)
+- Análise de múltiplos idiomas (foco em PT-BR/EN nesta versão)
+- Auditoria completa de todas as análises (log básico é suficiente)
