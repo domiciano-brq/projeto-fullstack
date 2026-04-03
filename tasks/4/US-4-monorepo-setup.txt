@@ -1,0 +1,54 @@
+US-4 — Setup: Monorepo e ambiente de desenvolvimento local
+===========================================================
+
+CONTEXTO
+--------
+O projeto ContractIQ precisa de uma base sólida para iniciar o desenvolvimento. Isso inclui configurar a estrutura monorepo, ferramentas de desenvolvimento compartilhadas e um ambiente local funcional que permita aos desenvolvedores começar a trabalhar rapidamente.
+
+HISTORIA
+--------
+Como desenvolvedor,
+quero configurar um monorepo com ambiente local pronto para desenvolvimento,
+para conseguir trabalhar em múltiplos aplicativos (web, api, shared) de forma coordenada.
+
+CRITERIOS DE ACEITACAO
+-----------------------
+1. Estrutura monorepo criada com pastas `apps/web`, `apps/api` e `packages/shared`
+2. Docker Compose configurado com PostgreSQL, Redis e serviços auxiliares
+3. ESLint, Prettier e TypeScript compartilhado configurados
+4. Gerenciador de monorepo (turbo ou nx) configurado
+5. `.env.example` criado com todas as variáveis de ambiente necessárias
+6. `docker compose up` sobe todo o ambiente sem erros
+7. Todos os aplicativos compilam sem erros
+8. Lint e type-check passam no CI
+9. README atualizado com instruções de setup
+
+REGRAS TECNICAS
+---------------
+- Seguir convenções do CLAUDE.md
+- Usar Docker Compose para orquestração dos serviços
+- Prefira solução simples e direta; evite over-engineering
+- Documentação centralizada em `docs/`
+- Não commitar segredos ou arquivos `.env`
+
+CRITERIOS DE TESTE (QA)
+------------------------
+Setup Local:
+  - Clonar repositório e executar `docker compose up` com sucesso
+  - Verificar se PostgreSQL, Redis e outros serviços estão rodando
+  - Executar `npm/yarn install` e compilar todos os apps sem erros
+  - Confirmar que lint e type-check passam em todos os pacotes
+
+CI/CD:
+  - Lint, type-check e build funcionam na pipeline de CI
+  - Não há avisos ou erros não tratados
+
+Documentacao:
+  - README contém instruções claras de setup
+  - Variáveis de ambiente documentadas no `.env.example`
+
+FORA DO ESCOPO
+--------------
+- Implementar funcionalidades específicas do ContractIQ
+- Configuração de deployment em produção
+- Otimizações de performance no ambiente local
