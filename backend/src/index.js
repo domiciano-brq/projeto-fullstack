@@ -1,5 +1,7 @@
+'use strict';
+
 /**
- * Entry point do servidor Express — Backend de Analise de Contratos com IA
+ * Entry point do servidor Express.
  *
  * Variaveis de ambiente (ver .env.example):
  *   PORT            - Porta HTTP (default: 3000)
@@ -12,32 +14,30 @@ const routes = require('./routes/index');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-app.use(express.json());
-app.use('/api', routes);
-
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-// Middleware para parse de JSON
+// Parse JSON bodies
 app.use(express.json());
 
-// Middleware para parse de URL-encoded bodies
+// Parse URL-encoded bodies
 app.use(express.urlencoded({ extended: true }));
 
-// Registra todas as rotas da API no prefixo /api
-app.use('/api', routes);
-
-// Rota de health check
-app.get('/health', (req, res) => {
+// Health check
+app.get('/health', (_req, res) => {
   res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-// Handler global de erros nao tratados
-app.use((err, req, res, next) => {
-  // Erro de multer: arquivo muito grande
+// All API routes under /api prefix
+app.use('/api', routes);
+
+// 404 fallback
+app.use((_req, res) => {
+  res.status(404).json({ error: 'Rota nao encontrada' });
+});
+
+// Global error handler
+app.use((err, _req, res, _next) => {
   if (err.code === 'LIMIT_FILE_SIZE') {
     return res.status(413).json({ error: 'Arquivo excede o limite de 10MB' });
   }
-
   console.error(`[App] Erro nao tratado: ${err.message}`);
   return res.status(500).json({ error: 'Erro interno do servidor' });
 });

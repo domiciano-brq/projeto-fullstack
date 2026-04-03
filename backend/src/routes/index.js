@@ -1,34 +1,27 @@
-const express = require('express');
-const router = express.Router();
-
-const signatureController = require('../controllers/signature.controller');
-
-// ---------------------------------------------------------------------------
-// Signature routes
-// ---------------------------------------------------------------------------
-
-// Send contract for digital signature
-router.post('/contracts/:id/signature-request', signatureController.createSignatureRequest);
-
-// Get current signature status
-router.get('/contracts/:id/signature-status', signatureController.getSignatureStatus);
-
-// Cancel a pending signature request
-router.delete('/contracts/:id/signature-request', signatureController.cancelSignatureRequest);
-
-// Receive webhook notifications from the signature platform
-router.post('/webhooks/signature', signatureController.handleWebhook);
 'use strict';
 
 /**
- * Central route registry — US-6
- *
+ * Central route registry — all API routes.
  * All routes are prefixed with /api (applied in app.js).
+ *
+ * Routes registered here:
+ *   US-3  — auth, organizations, invites, me
+ *   US-5  — contracts analyze/jobs/search
+ *   US-6  — documents upload/get/content/versions/audit
+ *   US-7  — signature-request/status/webhook
  */
 
 const express = require('express');
-const router = express.Router();
+const multer = require('multer');
 
+const { requireAuth, requireOrgContext, requireRole } = require('../middleware/auth');
+
+// Controllers
+const { signup, login, refresh, googleAuth, googleCallback } = require('../controllers/auth.controller');
+const { createOrganization, editOrganization, deactivateOrganization, listMembers, sendInvite } = require('../controllers/organizations.controller');
+const { acceptInviteHandler } = require('../controllers/invites.controller');
+const { getMe } = require('../controllers/me.controller');
+const contractsController = require('../controllers/contracts.controller');
 const {
   multerUploadMiddleware,
   uploadDocument,
@@ -38,116 +31,38 @@ const {
   getDocumentVersion,
   getDocumentAudit,
 } = require('../controllers/documents.controller');
-
-// ---------------------------------------------------------------------------
-// Documents
-// ---------------------------------------------------------------------------
-
-// POST /api/documents/upload
-// Multipart upload: validates MIME type (magic bytes) and size (<= 10MB).
-// Returns 201 immediately without waiting for OCR.
-router.post('/documents/upload', multerUploadMiddleware, uploadDocument);
-
-// GET /api/documents/:id
-// Returns metadata of the latest version of the document.
-router.get('/documents/:id', getDocument);
-
-// GET /api/documents/:id/content
-// Returns extracted text (or status if OCR is still pending).
-router.get('/documents/:id/content', getDocumentContent);
-
-// GET /api/documents/:id/versions
-// Lists all versions, newest first.
-router.get('/documents/:id/versions', getDocumentVersions);
-
-// GET /api/documents/:id/versions/:versionId
-// Returns metadata + text of a specific version.
-router.get('/documents/:id/versions/:versionId', getDocumentVersion);
-
-// GET /api/documents/:id/audit
-// Lists audit history in reverse chronological order.
-router.get('/documents/:id/audit', getDocumentAudit);
-/**
- * Registro central de rotas da API.
- * Prefixo base: /api
- *
- * Convencoes:
- *   - Todos os endpoints usam prefixo /api/
- *   - Upload de arquivos via multer (campo 'file', max 10MB)
- *   - Validacao de tamanho feita no controller antes de qualquer processamento
- */
-
-const express = require('express');
-const multer = require('multer');
-const contractsController = require('../controllers/contracts.controller');
+const signatureController = require('../controllers/signature.controller');
 
 const router = express.Router();
 
-// Configuracao do multer para upload em memoria (sem gravacao em disco)
-// O limite de 10MB e validado no controller para retornar 413 conforme contrato
+// ---------------------------------------------------------------------------
+// Multer for contracts analyze (in-memory, limit allows controller to return 413)
+// ---------------------------------------------------------------------------
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: {
-    fileSize: 10 * 1024 * 1024 + 1 // +1 para permitir que o controller retorne 413 com msg correta
-  }
+    fileSize: 10 * 1024 * 1024 + 1, // +1 so controller can return 413 with correct message
+  },
 });
 
-// --- Rotas de contratos ---
-
-/**
- * POST /api/contracts/analyze
- * Envia contrato (PDF ou texto) para analise assincrona via IA
- */
-router.post(
-  '/contracts/analyze',
-  upload.single('file'),
-  contractsController.analyzeContract
-);
-
-/**
- * GET /api/contracts/jobs/:jobId
- * Consulta status e resultado de um job de analise
- */
-router.get(
-  '/contracts/jobs/:jobId',
-  contractsController.getJobStatus
-);
-
-/**
- * GET /api/contracts/search
- * Busca semantica por contratos similares
- * Query: q (obrigatorio), limit (opcional, default 10, max 50)
- */
-router.get(
-  '/contracts/search',
-  contractsController.searchContracts
-);
-
- * Routes — US-3: Autenticacao e Estrutura Multi-tenant
- * All routes are prefixed with /api via the Express app.
- */
-
-const { Router } = require('express');
-const { requireAuth, requireOrgContext, requireRole } = require('../middleware/auth');
-
-const { signup, login, refresh, googleAuth, googleCallback } = require('../controllers/auth.controller');
-const { createOrganization, editOrganization, deactivateOrganization, listMembers, sendInvite } = require('../controllers/organizations.controller');
-const { acceptInviteHandler } = require('../controllers/invites.controller');
-const { getMe } = require('../controllers/me.controller');
-
-const router = Router();
-
-// ---- Auth ----
+// ---------------------------------------------------------------------------
+// US-3 — Auth
+// ---------------------------------------------------------------------------
 router.post('/auth/signup', signup);
 router.post('/auth/login', login);
 router.post('/auth/refresh', refresh);
 router.get('/auth/google', googleAuth);
 router.get('/auth/google/callback', googleCallback);
 
-// ---- Me ----
+// ---------------------------------------------------------------------------
+// US-3 — Me
+// ---------------------------------------------------------------------------
 router.get('/me', requireAuth, getMe);
 
-// ---- Organizations ----
+// ---------------------------------------------------------------------------
+// US-3 — Organizations
+// ---------------------------------------------------------------------------
+
 // Create org — any authenticated user
 router.post('/organizations', requireAuth, createOrganization);
 
@@ -169,7 +84,7 @@ router.delete(
   deactivateOrganization
 );
 
-// List members — any org member (Admin, Member, Viewer)
+// List members — any org member
 router.get(
   '/organizations/:id/members',
   requireAuth,
@@ -186,8 +101,60 @@ router.post(
   sendInvite
 );
 
-// ---- Invites ----
-// Accept invite — authenticated user
+// ---------------------------------------------------------------------------
+// US-3 — Invites
+// ---------------------------------------------------------------------------
 router.post('/invites/:token/accept', requireAuth, acceptInviteHandler);
+
+// ---------------------------------------------------------------------------
+// US-5 — Contracts (AI analysis pipeline)
+// ---------------------------------------------------------------------------
+
+// POST /api/contracts/analyze — submit contract for async AI analysis
+router.post('/contracts/analyze', upload.single('file'), contractsController.analyzeContract);
+
+// GET /api/contracts/jobs/:jobId — poll analysis job status
+router.get('/contracts/jobs/:jobId', contractsController.getJobStatus);
+
+// GET /api/contracts/search — semantic search
+router.get('/contracts/search', contractsController.searchContracts);
+
+// ---------------------------------------------------------------------------
+// US-6 — Documents
+// ---------------------------------------------------------------------------
+
+// POST /api/documents/upload — multipart upload (PDF or DOCX, max 10 MB)
+router.post('/documents/upload', multerUploadMiddleware, uploadDocument);
+
+// GET /api/documents/:id — latest version metadata
+router.get('/documents/:id', getDocument);
+
+// GET /api/documents/:id/content — extracted text / OCR status
+router.get('/documents/:id/content', getDocumentContent);
+
+// GET /api/documents/:id/versions — all versions, newest first
+router.get('/documents/:id/versions', getDocumentVersions);
+
+// GET /api/documents/:id/versions/:versionId — specific version metadata + text
+router.get('/documents/:id/versions/:versionId', getDocumentVersion);
+
+// GET /api/documents/:id/audit — audit history
+router.get('/documents/:id/audit', getDocumentAudit);
+
+// ---------------------------------------------------------------------------
+// US-7 — Digital Signature
+// ---------------------------------------------------------------------------
+
+// POST /api/contracts/:id/signature-request — send contract for signing
+router.post('/contracts/:id/signature-request', signatureController.createSignatureRequest);
+
+// GET /api/contracts/:id/signature-status — current signature status
+router.get('/contracts/:id/signature-status', signatureController.getSignatureStatus);
+
+// DELETE /api/contracts/:id/signature-request — cancel pending signature
+router.delete('/contracts/:id/signature-request', signatureController.cancelSignatureRequest);
+
+// POST /api/webhooks/signature — receive platform status notifications
+router.post('/webhooks/signature', signatureController.handleWebhook);
 
 module.exports = router;
