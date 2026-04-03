@@ -1,0 +1,60 @@
+US-6 — Backend: Upload, OCR e gestão de documentos
+====================================================
+
+CONTEXTO
+--------
+Sistema de gerenciamento de contratos necessita de um backend robusto para receber, processar e armazenar documentos legais. O upload deve ser validado, os arquivos armazenados com segurança na nuvem, e o conteúdo extraído de forma assíncrona para não bloquear a API.
+
+HISTORIA
+--------
+Como usuário do sistema de contratos,
+quero fazer upload de documentos PDF/DOCX com confiança,
+para que sejam armazenados com segurança, processados sem delay e recuperáveis a qualquer momento.
+
+CRITERIOS DE ACEITACAO
+-----------------------
+1. Endpoint POST /documents/upload aceita PDF e DOCX com tamanho máximo de 10MB
+2. Upload retorna imediatamente com ID do documento (não bloqueia em OCR)
+3. Arquivos são armazenados no AWS S3 com nome único e rastreável
+4. Pipeline OCR é executado assincronamente via BullMQ
+5. Texto de DOCX é extraído nativamente sem depender de OCR
+6. Cada versão anterior de um documento é preservada e recuperável
+7. Sistema registra auditoria (quem, o quê, quando) para toda ação em documentos
+8. Erros de upload/processamento são reportados e tratáveis
+
+REGRAS TECNICAS
+---------------
+- Usar BullMQ para fila de jobs de OCR
+- AWS S3 para persistência de arquivos (com versionamento nativo se possível)
+- Validação de tipo MIME e tamanho na borda (validação no endpoint)
+- Extração de DOCX via biblioteca (ex: python-docx ou equivalente)
+- Auditoria persistida em banco de dados com timestamps UTC
+- Sem over-engineering: usar biblioteca OCR simples (ex: Tesseract ou serviço AWS Textract)
+
+CRITERIOS DE TESTE (QA)
+------------------------
+API:
+  - Upload com arquivo válido (PDF, DOCX) retorna 201 com document_id
+  - Upload com arquivo inválido (tipo MIME não permitido) retorna 400
+  - Upload com arquivo > 10MB retorna 413
+  - Upload com arquivo vazio retorna 400
+  - Resposta imediata (< 500ms) sem aguardar OCR
+  - GET /documents/:id retorna metadados do documento
+  - GET /documents/:id/content retorna texto extraído (com status de processamento se pendente)
+  - GET /documents/:id/versions lista todas as versões
+  - GET /documents/:id/versions/:versionId retorna versão específica
+  - GET /documents/:id/audit lista histórico de alterações com usuário, ação e timestamp
+
+E2E:
+  - Upload de PDF, aguardar processamento OCR, validar texto extraído
+  - Upload de DOCX, validar extração de texto imediata
+  - Upload de nova versão de documento existente, versão anterior recuperável
+  - Simular falha de OCR, validar que documento permanece acessível e erro é registrado
+
+FORA DO ESCOPO
+--------------
+- Processamento de imagens JPEG/PNG (apenas documentos PDF/DOCX)
+- OCR em tempo real (processamento assíncrono é obrigatório)
+- UI/Frontend de upload (apenas backend)
+- Permissões granulares por usuário (apenas auditoria básica)
+- Busca full-text em conteúdo extraído

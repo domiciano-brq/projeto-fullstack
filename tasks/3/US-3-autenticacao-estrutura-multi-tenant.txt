@@ -1,0 +1,79 @@
+US-3 — Backend: Autenticação e Estrutura Multi-tenant
+=======================================================
+
+CONTEXTO
+--------
+O sistema precisa de uma camada de autenticação robusta e segura, com suporte a múltiplos
+provedores de identidade e uma estrutura multi-tenant que isole dados por organização.
+
+
+HISTORIA
+--------
+Como desenvolvedor backend,
+quero implementar autenticação segura (email/senha e SSO Google) com estrutura multi-tenant,
+para que cada organização tenha dados isolados e seus usuários possam acessar a aplicação
+de forma segura.
+
+
+CRITERIOS DE ACEITACAO
+-----------------------
+1. Usuário consegue se registrar e fazer login com email/senha
+2. Token JWT é gerado e refresh token permite renovação de sessão
+3. Usuário consegue fazer login via SSO Google (OAuth 2.0)
+4. Cada request autenticado injeta contexto de organização automaticamente
+5. Admin consegue criar, editar e desativar organizações
+6. Admin consegue convidar membros por e-mail com token com expiração
+7. Membro consegue aceitar convite e ser vinculado à organização
+8. Sistema implementa controle de permissões por role (Admin, Member, Viewer)
+9. Guards e decorators de autenticação funcionam em rotas protegidas
+10. Dados estão isolados por organização em todas as operações
+
+
+REGRAS TECNICAS
+---------------
+- Implementar em NestJS com Guards e Decorators
+- JWT com expiração configurável (recomendado 15min para access token)
+- Refresh token com expiração maior (recomendado 7 dias)
+- Senhas armazenadas com bcrypt (salt rounds >= 10)
+- Tokens de convite com expiração (recomendado 7 dias)
+- OAuth 2.0 Google Integration usando passport-google-oauth20
+- Validação de organizações em cada request via middleware/guard
+- Seguir convencoes do CLAUDE.md — sem over-engineering
+- Usar variáveis de ambiente para configs sensíveis (.env)
+
+
+CRITERIOS DE TESTE (QA)
+------------------------
+API:
+  - POST /auth/signup - Registrar usuário com email/senha
+  - POST /auth/login - Login com email/senha (retorna access_token e refresh_token)
+  - POST /auth/refresh - Renovar access_token com refresh_token
+  - GET /auth/google - Redirecionar para consent Google
+  - GET /auth/google/callback - Callback do OAuth Google (sucesso e erro)
+  - POST /organizations - Criar organização (admin autenticado)
+  - PATCH /organizations/:id - Editar organização
+  - DELETE /organizations/:id - Desativar organização
+  - POST /organizations/:id/invites - Enviar convite por e-mail
+  - POST /invites/:token/accept - Aceitar convite e vincular usuário
+  - GET /me - Retorna dados do usuário autenticado com contexto de org
+  - GET /organizations/:id/members - Listar membros (isolado por org)
+  - Validar isolamento: usuário de org A não consegue acessar recursos de org B
+
+E2E:
+  - Fluxo completo: signup → login → criar org → convidar membro → aceitar convite
+  - Refresh token válido renova a sessão
+  - Refresh token expirado retorna 401
+  - Tentativa de login com credenciais inválidas retorna 401
+  - SSO Google redireciona corretamente e cria usuário
+  - Token de convite expirado retorna erro
+  - Usuário sem permissão não consegue acessar operações de admin
+  - Isolamento multi-tenant: dados de org A não são visíveis em org B
+
+
+FORA DO ESCOPO
+--------------
+- Two-factor authentication (2FA)
+- SSO com outros provedores (GitHub, Microsoft, etc.)
+- Recuperação de senha via e-mail (pode ser futura)
+- Auditoria de logs de autenticação
+- Rate limiting em endpoints de auth (pode ser futura)
