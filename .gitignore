@@ -1,6 +1,5 @@
 .fusion-plugin/
 logs/
-<<<<<<< KAN-4
 
 # Dependencies
 node_modules/
@@ -23,8 +22,7 @@ Thumbs.db
 # IDE
 .vscode/
 .idea/
-=======
 node_modules/
 .env
 *.log
->>>>>>> main
+

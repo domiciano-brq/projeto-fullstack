@@ -1,0 +1,59 @@
+US-5 — Backend: Pipeline de análise de contratos com IA
+========================================================
+
+CONTEXTO
+--------
+O sistema precisa automatizar a análise de contratos utilizando IA para identificar cláusulas de risco, gerar resumos executivos e permitir busca semântica entre documentos. Isto reduz o tempo de revisão manual e melhora a qualidade da análise legal.
+
+HISTORIA
+--------
+Como analista jurídico,
+quero que o sistema analise automaticamente contratos usando IA,
+para identificar riscos e cláusulas abusivas sem ter que ler manualmente cada documento.
+
+CRITERIOS DE ACEITACAO
+-----------------------
+1. Contrato é analisado completo em menos de 10 segundos via pipeline assíncrono
+2. Sistema retorna lista de cláusulas com classificação de risco (alto/médio/baixo)
+3. Cada cláusula identificada inclui: texto, nível de risco e motivo da análise
+4. Resumo executivo do contrato é gerado automaticamente
+5. Busca semântica retorna contratos similares ordenados por relevância
+6. Resultados são cacheados no Redis para evitar reprocessamento de contratos idênticos
+7. Processamento é assíncrono via BullMQ com status rastreável
+8. API retorna análise em formato estruturado (JSON)
+
+REGRAS TECNICAS
+---------------
+- Usar OpenAI GPT-4o via LangChain para análise
+- Implementar embeddings com pgvector para busca semântica
+- Usar BullMQ para fila de processamento assíncrono
+- Cache em Redis com chave baseada em hash do contrato
+- Validar tamanho do arquivo antes de processamento (máximo 10MB)
+- Lidar com timeouts do GPT-4o com retry automático
+- Não armazenar conteúdo sensível em logs
+- Seguir convencoes do CLAUDE.md
+- Sem over-engineering nas queries de pgvector
+
+CRITERIOS DE TESTE (QA)
+------------------------
+API:
+  - Enviar contrato e receber job ID com status pending
+  - Verificar status do job em processamento
+  - Validar resultado da análise com todos os campos obrigatórios
+  - Testar cache: análise de contrato idêntico retorna resultado cacheado
+  - Testar timeout: contrato extremamente longo trata erro graciosamente
+  - Busca semântica retorna contratos similares em ordem de relevância
+
+E2E:
+  - Upload de contrato → fila → processamento → cache → resultado pronto
+  - Análise de contrato com cláusulas claramente abusivas detecta riscos
+  - Resumo executivo é conciso e cobre pontos principais
+  - Busca semântica encontra contratos relacionados mesmo com variações de linguagem
+
+FORA DO ESCOPO
+--------------
+- Interface de usuário para visualizar análises
+- Integração com outros modelos de IA (apenas GPT-4o nesta sprint)
+- Tradução automática de contratos em outros idiomas
+- Assinatura digital de contratos
+- Histórico de versões de análises anteriores
