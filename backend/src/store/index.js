@@ -1,14 +1,25 @@
+'use strict';
+
 /**
- * In-memory data store simulating the database entities:
+ * In-memory data store — unified store for all entities:
+ *
+ * US-6 (Documents):
  *   - documents
  *   - document_versions
  *   - document_audit
  *
- * Note: OCR background jobs are also simulated in-memory using setTimeout.
- * In a production environment, BullMQ + Redis would be used.
+ * US-3 (Auth & Multi-tenant):
+ *   - users, organizations, members, invites, refreshTokens
+ *
+ * Note: All data is reset on server restart — no persistence.
+ * In a production environment, replace with Prisma/Knex + PostgreSQL.
  */
 
-'use strict';
+const { v4: uuidv4 } = require('uuid');
+
+// ---------------------------------------------------------------------------
+// US-6 — Document storage (Map-based, simulating relational DB + S3)
+// ---------------------------------------------------------------------------
 
 // Map<document_id, { document_id, created_at }>
 const documents = new Map();
@@ -23,16 +34,9 @@ const documentVersionIndex = new Map();
 // Map<document_id, [audit_entry, ...]>
 const documentAudit = new Map();
 
-module.exports = {
-  documents,
-  documentVersions,
-  documentVersionIndex,
-  documentAudit,
- * In-memory data store for US-3: Autenticacao e Estrutura Multi-tenant
- * All data is reset on server restart — no persistence.
- */
-
-const { v4: uuidv4 } = require('uuid');
+// ---------------------------------------------------------------------------
+// US-3 — Auth & Multi-tenant storage (array-based)
+// ---------------------------------------------------------------------------
 
 const store = {
   users: [],           // User[]
@@ -177,7 +181,17 @@ function revokeRefreshToken(token) {
   return rt;
 }
 
+// ---------------------------------------------------------------------------
+// Exports — document Maps (US-6) + auth/org helpers (US-3)
+// ---------------------------------------------------------------------------
+
 module.exports = {
+  // US-6 document Maps
+  documents,
+  documentVersions,
+  documentVersionIndex,
+  documentAudit,
+  // US-3 raw store (used by me.controller)
   store,
   // users
   findUserById,
